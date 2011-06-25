@@ -25,16 +25,19 @@ The `qw` macro removes the need for quotes, unless your input has spaces, in whi
 3. Evaluate the expression
 4. The following code is printed and also placed in your clipboard:
 
+````java
     this.setFirstName(other.getFirstName());
     this.setSurname(other.getSurname());
     this.setEmail(other.getEmail());
     this.setDayTelephone(other.getDayTelephone());
     this.setMobileTelephone(other.getMobileTelephone());
+````
 
 ### Processing input
 
 Often you will need to generate code for a series of fields that are already declared in the class. In such cases, you can pass the code itself to the `names-from-declarations` function (remberer that Clojure allows multi-line strings):
 
+````clojure
     (print (copy (render-template
 				  "this.set{{(capitalize x)}}(other.get{{(capitalize x)}}());\n"
 				  (names-from-declarations
@@ -44,6 +47,7 @@ Often you will need to generate code for a series of fields that are already dec
     private String email;
     private String dayTelephone;
     private String mobileTelephone;"))))
+````
 
 This produces the same result as above. In a similar vein, the `first-alphas` allows you to extract the variable names from lines such as `firstName.set(null);`.
 
