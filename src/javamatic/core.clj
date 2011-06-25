@@ -1,9 +1,83 @@
 (ns javamatic.core
   (:require [clojure.contrib.str-utils :as str1]
             [clojure.contrib.str-utils2 :as str2])
-  (:use [clojure.contrib.str-utils2 :only [lower-case]])
-  (:import [java.awt Toolkit]
-           [java.awt.datatransfer StringSelection]))
+  (:use [clojure.contrib.str-utils2 :only [lower-case upper-case]])
+  (:import [java.awt GridBagConstraints Insets Dimension Font]
+           [java.awt Toolkit]
+           [java.awt.datatransfer StringSelection]
+           [javax.swing JLabel]))
+
+(defmacro on-action [component event & body]
+  `(. ~component addActionListener
+      (proxy [java.awt.event.ActionListener] []
+        (actionPerformed [~event] ~@body))))
+
+(defmacro set-grid! [constraints field value]
+  `(set! (. ~constraints ~(symbol (name field)))
+         ~(if (keyword? value)
+            `(. java.awt.GridBagConstraints
+                ~(symbol (name value)))
+            value)))
+
+(defmacro grid-bag-layout [container & body]
+  (let [c (gensym "c")
+        cntr (gensym "cntr")]
+    `(let [~c (new java.awt.GridBagConstraints)
+           ~cntr ~container]
+       ~@(loop [result '() body body]
+           (if (empty? body)
+             (reverse result)
+             (let [expr (first body)]
+               (if (keyword? expr)
+                 (recur (cons `(set-grid! ~c ~expr
+                                          ~(second body))
+                              result)
+                        (next (next body)))
+                 (recur (cons `(.add ~cntr ~expr ~c)
+                              result)
+                        (next body)))))))))
+
+(defn pastebox []
+  (let [font (Font. "Consolas" Font/PLAIN 12)
+        text-area (javax.swing.JTextArea.)
+        text-field (javax.swing.JTextField. "source")]
+    (doto (javax.swing.JFrame.)
+      (.setTitle "javamatic pastebox")
+      (.setLayout (java.awt.GridBagLayout.))
+      (grid-bag-layout
+       :fill :HORIZONTAL
+       :insets (Insets. 5 5 5 5)
+       :gridx 0 :gridy 0
+       :gridwidth 3
+       (doto (JLabel. " javamatic pastebox")
+         (.setFont (Font. "SansSerif" Font/BOLD 22)))
+       :gridy 1
+       :gridwidth 1
+       (javax.swing.JLabel. "var")
+       :gridx 1
+       :weightx 1
+       (doto text-field
+         (.setFont font)
+         (.setCaretPosition (count (.getText text-field))))
+       :gridx 2
+       :weightx 0
+       (doto (javax.swing.JButton. "intern")
+         (on-action e
+                    (intern
+                     'javamatic.core
+                     (symbol (.trim (.getText text-field)))
+                     (.getText text-area))))
+       :gridx 0, :gridy 2
+       :weightx 1, :weighty 1
+       :fill :BOTH
+       :gridwidth 3
+       (javax.swing.JScrollPane.
+        (doto text-area
+          (.setFont font))))
+      (.pack)
+      (.setSize (Dimension. 800 600))
+      (.setLocationRelativeTo nil)
+      (.setVisible true))))
 
 (defn copy
   "Copy passed string into clipboard."
@@ -24,19 +98,63 @@
   [s]
   (re-find #"^\{\{" s))
 
-;;;;;;;;;;;
+;;;;; string manipulation ;;;;;;
+
+(defn split
+  "Split string on whitespace"
+  [s]
+  (str2/split s #"\s+"))
 
 (defn capitalize
   "Capitalize the first letter of a string, but leave the rest untouched."
   [s]
   (str (str2/capitalize (str2/take s 1)) (str2/drop s 1)))
 
+(defn first-lower
+  "Convert to lower case the first letter of a string, but leave the
+  rest untouched."
+  [s]
+  (str (str2/lower-case (str2/take s 1)) (str2/drop s 1)))
+
 (defn add-spaces
   "Seperate camel-case with spaces."
   [s]
   (str2/trim (str2/replace s #"[A-Z]" #(str " " %))))
 
-;;;;;;;;;;;
+(defn camel-case
+  [xs]
+  (apply str (map capitalize xs)))
+
+(defn CamelCase
+  [xs]
+  (camel-case xs))
+
+(defn camelCase
+  [xs]
+  (first-lower (camel-case xs)))
+
+(defn reorder
+  "Split string at whitespace and re-order the pieces according to the passed indices.
+
+  Example: (reorder \"public name\" [1 0])
+           \"name public\""
+  [s indices]
+  (let [pieces (split s)]
+    (str2/join " " (map #(nth pieces %) indices))))
+
+(defn reorder-camel
+  "Reorder the pieces of a camel-cased string according to the passed
+  indices. The original case of the first character is retained in the
+  resulting string.
+
+  Example: (reorder-camel \"publicName\" [1 0])
+           \"namePublic\""
+  [s indices]
+  (let [pieces (split (reorder (add-spaces s) indices))]
+    (if (Character/isLowerCase (first s)) (camelCase pieces)
+        (CamelCase pieces))))
+
+;;;;; input processing ;;;;;;
 
 (defn first-alpha
   "Get all the characters at the beggining of the string up to the
@@ -64,7 +182,7 @@
   [s]
   (remove nil? (map name-from-declaration (str2/split s #"\n"))))
 
-;;;;;;;;;;;
+;;;;; templates ;;;;;;
 
 (defmacro qw
   "Constructs a vector of the names (strings) of the passed symbols.
@@ -91,18 +209,8 @@
   (apply str
          (map #(render-template-single t %) values)))
 
-(copy (render-template
-        "set{{x}}(\"{{(add-spaces x)}}\");\n"
-        (qw FirstName Surname Address Email)))
 
-
-
-
-
-
-
-
-
-
-
-
+;;example
+;(copy (render-template
+;        "set{{x}}(\"{{(upper-case x)}}\");\n"
+;        (qw FirstName Surname Address Email)))
