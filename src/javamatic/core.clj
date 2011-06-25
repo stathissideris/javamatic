@@ -126,7 +126,7 @@
   (str (str2/capitalize (str2/take s 1)) (str2/drop s 1)))
 
 (defn first-lower
-  "Convert to lower case the first letter of a string, but leave the
+  "Convert the first letter of a string to lower case, but leave the
   rest untouched."
   [s]
   (str (str2/lower-case (str2/take s 1)) (str2/drop s 1)))
@@ -137,14 +137,19 @@
   (str2/trim (str2/replace s #"[A-Z]" #(str " " %))))
 
 (defn camel-case
+  "Concat a collection of strings into a camel-case string."
   [xs]
   (apply str (map capitalize xs)))
 
 (defn CamelCase
+  "Concat a collection of strings into a camel-case string (first
+  letter will be upper case)."
   [xs]
   (camel-case xs))
 
 (defn camelCase
+  "Concat a collection of strings into a camel-case string (first
+  letter will be lower case)."  
   [xs]
   (first-lower (camel-case xs)))
 
@@ -229,3 +234,8 @@
 ;(copy (render-template
 ;        "set{{x}}(\"{{(upper-case x)}}\");\n"
 ;        (qw FirstName Surname Address Email)))
+
+(print (copy (render-template
+              "this.set{{x}}(other.get{{x}});\n"
+              (qw FirstName Surname Email
+                  DayTelephone MobileTelephone))))
