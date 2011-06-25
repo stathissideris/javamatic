@@ -13,16 +13,11 @@ Say you have a class and you need to write a copy constructor for it. It becomes
 1. Fire up your REPL and load src/javamatic/core.clj
 2. In the REPL, enter the following:
 
-    (print (copy (render-template
+````(print (copy (render-template
                   "this.set{{x}}(other.get{{x}());\n"
                   (qw FirstName Surname Email
                       DayTelephone MobileTelephone))))
-
-    (print (copy (render-template
-                  "private String {{(first-lower x)}};\n"
-                  (qw FirstName Surname Email
-                      DayTelephone MobileTelephone))))
-
+````
 					  
 The `qw` macro removes the need for quotes, unless your input has spaces, in which case you can mix normal strings with the symbols given to `qw`. This is an idea stolen from Perl.
 
