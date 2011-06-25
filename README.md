@@ -13,7 +13,8 @@ Say you have a class and you need to write a copy constructor for it. It becomes
 1. Fire up your REPL and load src/javamatic/core.clj
 2. In the REPL, enter the following:
 
-````(print (copy (render-template
+````clojure
+    (print (copy (render-template
                   "this.set{{x}}(other.get{{x}());\n"
                   (qw FirstName Surname Email
                       DayTelephone MobileTelephone))))
