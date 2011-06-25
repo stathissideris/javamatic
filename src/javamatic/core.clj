@@ -5,7 +5,7 @@
   (:import [java.awt GridBagConstraints Insets Dimension Font]
            [java.awt Toolkit]
            [java.awt.datatransfer StringSelection]
-           [javax.swing JLabel]))
+           [javax.swing JLabel JOptionPane]))
 
 (defmacro on-action [component event & body]
   `(. ~component addActionListener
@@ -37,6 +37,14 @@
                               result)
                         (next body)))))))))
 
+(defn copy
+  "Copy passed string into clipboard."
+  [s]
+  (let [ss (StringSelection. s)]
+    (.setContents
+     (.getSystemClipboard (Toolkit/getDefaultToolkit)) ss ss)
+    s))
+
 (defn pastebox []
   (let [font (Font. "Consolas" Font/PLAIN 12)
         text-area (javax.swing.JTextArea.)
@@ -48,7 +56,7 @@
        :fill :HORIZONTAL
        :insets (Insets. 5 5 5 5)
        :gridx 0 :gridy 0
-       :gridwidth 3
+       :gridwidth 4
        (doto (JLabel. " javamatic pastebox")
          (.setFont (Font. "SansSerif" Font/BOLD 22)))
        :gridy 1
@@ -63,14 +71,28 @@
        :weightx 0
        (doto (javax.swing.JButton. "intern")
          (on-action e
-                    (intern
-                     'javamatic.core
-                     (symbol (.trim (.getText text-field)))
-                     (.getText text-area))))
+                    (let [var-sym (symbol (.trim (.getText text-field)))
+                          the-ns (symbol
+                                  (if (namespace var-sym)
+                                    (namespace var-sym)
+                                    'javamatic.core))]
+                      ;(JOptionPane/showMessageDialog
+                      ; text-area (str "Interning " (name var-sym) " into ns " the-ns))
+                      (intern
+                       the-ns
+                       var-sym
+                       (.getText text-area)))))
+       :gridx 3
+       (doto (javax.swing.JButton. "copy literal")
+         (on-action e
+                    (copy (str2/replace
+                           (prn-str (.getText text-area))
+                           #"\\n"
+                           "\n"))))
        :gridx 0, :gridy 2
        :weightx 1, :weighty 1
        :fill :BOTH
-       :gridwidth 3
+       :gridwidth 4
        (javax.swing.JScrollPane.
         (doto text-area
           (.setFont font))))
@@ -79,13 +101,6 @@
       (.setLocationRelativeTo nil)
       (.setVisible true))))
 
-(defn copy
-  "Copy passed string into clipboard."
-  [s]
-  (let [ss (StringSelection. s)]
-    (.setContents
-     (.getSystemClipboard (Toolkit/getDefaultToolkit)) ss ss)
-    s))
 
 (defn placeholder?
   "Tests whether the passed string is a template placeholder."
