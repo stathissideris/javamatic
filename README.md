@@ -15,7 +15,7 @@ Say you have a class and you need to write a copy constructor for it. It becomes
 
 ````clojure
     (print (copy (render-template
-                  "this.set{{x}}(other.get{{x}());\n"
+                  "this.set{{x}}(other.get{{x}}());\n"
                   (qw FirstName Surname Email
                       DayTelephone MobileTelephone))))
 ````
