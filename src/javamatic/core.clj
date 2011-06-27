@@ -200,11 +200,12 @@
 (defn name-from-declaration
   "Extract the variable name from a single Java declaration."
   [s]
-  (first-alpha
-   (second (remove
-            (apply hash-set
-                   "" (qw public protected private static volatile transient final))
-            (str2/split s #"\s+")))))
+  (when (not (empty? (.trim s)))
+    (first-alpha
+      (second (remove
+                (apply hash-set
+                  "" (qw public protected private static volatile transient final))
+                (str2/split s #"\s+"))))))
 
 (defn names-from-declarations
   "Split the passed string at new lines and apply
