@@ -7,6 +7,14 @@
            [java.awt.datatransfer StringSelection]
            [javax.swing JLabel JOptionPane]))
 
+(defmacro qw
+  "Constructs a vector of the names (strings) of the passed symbols.
+  This is to save you typing unneccesary quotes. Stolen from Perl.
+
+  Example: (qw \"first name\" surname address)"
+  [& words]
+  `(vector ~@(map name words)))
+
 (defmacro on-action [component event & body]
   `(. ~component addActionListener
       (proxy [java.awt.event.ActionListener] []
@@ -187,7 +195,7 @@
   "Split the passed string at new lines and apply get-first-alpha to
   each line."
   [s]
-  (remove nil? (map get-first-alpha (str2/split s #"\n"))))
+  (remove nil? (map first-alpha (str2/split s #"\n"))))
 
 (defn name-from-declaration
   "Extract the variable name from a single Java declaration."
@@ -205,14 +213,6 @@
   (remove nil? (map name-from-declaration (str2/split s #"\n"))))
 
 ;;;;; templates ;;;;;;
-
-(defmacro qw
-  "Constructs a vector of the names (strings) of the passed symbols.
-  This is to save you typing unneccesary quotes. Stolen from Perl.
-
-  Example: (qw \"first name\" surname address)"
-  [& words]
-  `(vector ~@(map name words)))
 
 (def x nil)
 (defn eval-placeholder [placeholder value]
@@ -237,7 +237,7 @@
 ;        "set{{x}}(\"{{(upper-case x)}}\");\n"
 ;        (qw FirstName Surname Address Email)))
 
-(print (copy (render-template
-              "this.set{{x}}(other.get{{x}});\n"
-              (qw FirstName Surname Email
-                  DayTelephone MobileTelephone))))
+;(print (copy (render-template
+;              "this.set{{x}}(other.get{{x}});\n"
+;              (qw FirstName Surname Email
+;                  DayTelephone MobileTelephone))))
