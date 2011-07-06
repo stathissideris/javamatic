@@ -66,7 +66,7 @@ It is also possible to pass a map instead of a list to `render-template`. This a
     this.setMobileTelephone(other.getMobile());
 ````
 
-If the passed lists differ in size, the template is render as many times as the size of the "first" list (since a map is passed, it's not guaranteed which list is the first).
+If the passed lists differ in size, the template is rendered as many times as the size of the "first" list (since a map is passed, it's not guaranteed which list is the first).
 
 ### Processing input
 
