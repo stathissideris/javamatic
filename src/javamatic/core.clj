@@ -109,6 +109,7 @@
       (.setLocationRelativeTo nil)
       (.setVisible true))))
 
+;;;;; end of pastebox ;;;;;
 
 (defn placeholder?
   "Tests whether the passed string is a template placeholder."
@@ -119,7 +120,7 @@
   "Tests whether the passed string is a template placeholder that
   needs to be evaluated."
   [s]
-  (re-find #"^\{\{" s))
+  (re-find #"^\{\{\(" s))
 
 ;;;;; string manipulation ;;;;;;
 
