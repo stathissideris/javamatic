@@ -7,6 +7,9 @@
            [java.awt.datatransfer StringSelection]
            [javax.swing JLabel JOptionPane]))
 
+(def placeholder-re #"\{\{\s*.+?\s*\}\}")
+(def placeholder-capture-re #"\{\{\s*(.+?)\s*\}\}")
+
 (defmacro qw
   "Constructs a vector of the names (strings) of the passed symbols.
   This is to save you typing unneccesary quotes. Stolen from Perl.
@@ -110,6 +113,19 @@
       (.setVisible true))))
 
 ;;;;; end of pastebox ;;;;;
+
+(defn value-map-to-records [the-map]
+  (let [first-seq (second (first the-map))]
+    (loop [current-map the-map
+           records []
+           s first-seq]
+      (if (seq s)
+        (recur
+         (into {} (map (fn [[k [v & vs]]] [k vs]) current-map)) ;;current-map
+         (conj records
+               (into {} (map (fn [[k [v & vs]]] [k v]) current-map))) ;;records
+         (next s)) ;;s
+        records))))
 
 (defn placeholder?
   "Tests whether the passed string is a template placeholder."
@@ -217,22 +233,36 @@
 ;;;;; templates ;;;;;;
 
 (def x nil)
-(defn eval-placeholder [placeholder value]
-  (let [code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
-    (binding [x value]
-      (eval code))))
+(defn eval-placeholder [placeholder record]
+  (let [value (:x record)]
+    (let [code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
+      (binding [x value]
+        (eval code)))))
 
-(defn render-template-single [t x]
+(defn placeholder-var [placeholder]
+  {:pre [placeholder? placeholder]}
+  (second (re-find placeholder-capture-re placeholder)))
+
+(defn replace-placeholder [placeholder record]
+  (let [key (keyword (placeholder-var placeholder))]
+    (if (contains? record key)
+      (get record key)
+      placeholder)))
+
+(defn render-template-single [template record]
   (apply str
-         (map #(cond (eval-placeholder? %) (eval-placeholder % x)
-                     (placeholder? %) x
-                     :else %)
-              (str1/re-partition #"\{\{.+?\}\}" t))))
+         (map (fn [token]
+                (cond (eval-placeholder? token) (eval-placeholder token record)
+                      (placeholder? token) (replace-placeholder token record)
+                      :else token))
+                (str1/re-partition placeholder-re template))))
 
 (defn render-template [t values]
-  (apply str
-         (map #(render-template-single t %) values)))
-
+  {:pre [(string? t),
+         (or (map? values) (sequential? values))]}
+  (let [v (if (map? values) values {:x values})]
+    (apply str
+           (map #(render-template-single t %) (value-map-to-records v)))))
 
 ;;example
 ;(copy (render-template
