@@ -94,6 +94,6 @@ In some cases, the Java code that you'd like to process and pass to extract the 
 	
 ## License
 
-Copyright (C) 2011 FIXME
+Copyright (C) 2011 Efstathios Sideris
 
 Distributed under the Eclipse Public License, the same as Clojure.
