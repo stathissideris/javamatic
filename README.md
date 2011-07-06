@@ -33,6 +33,39 @@ The `qw` macro removes the need for quotes, unless your input has spaces, in whi
     this.setMobileTelephone(other.getMobileTelephone());
 ````
 
+### Multiple variables
+
+It is also possible to pass a map instead of a list to `render-template`. This allows you to have more than one variable per template rendering. For example:
+
+````clojure
+    (print (copy (render-template
+                  "this.set{{a}}(other.get{{b}}());\n"
+				  {:a (qw
+					   FirstName
+					   Surname
+					   Email
+                       DayTelephone
+					   MobileTelephone)
+				   :b (qw
+				       Name
+					   FamilyName
+					   ContactEmail
+					   Telephone
+					   Mobile)})))
+````
+
+...produces:
+
+````java
+    this.setFirstName(other.getName());
+    this.setSurname(other.getFamilyName());
+    this.setEmail(other.getContactEmail());
+    this.setDayTelephone(other.getTelephone());
+    this.setMobileTelephone(other.getMobile());
+````
+
+If the passed lists differ in size, the template is render as many times as the size of the "first" list (since a map is passed, it's not guaranteed which list is the first).
+
 ### Processing input
 
 Often you will need to generate code for a series of fields that are already declared in the class. In such cases, you can pass the code itself to the `names-from-declarations` function (remberer that Clojure allows multi-line strings):
@@ -51,7 +84,7 @@ Often you will need to generate code for a series of fields that are already dec
 
 This produces the same result as above. In a similar vein, the `first-alphas` function allows you to extract the variable names from lines such as `firstName.set(null);`.
 
-Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. You can use any expression that you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
+Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. In this case the placeholder variable name **has** to be `x`. You can use any expression that you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
 
 ### The pastebox
 
