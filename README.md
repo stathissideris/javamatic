@@ -33,6 +33,8 @@ The `qw` macro removes the need for quotes, unless your input has spaces, in whi
     this.setMobileTelephone(other.getMobileTelephone());
 ````
 
+When passing a single list (or vector) to a template, the placeholder should always be `{{x}}`.
+
 ### Multiple variables
 
 It is also possible to pass a map instead of a list to `render-template`. This allows you to have more than one variable per template rendering. For example:
