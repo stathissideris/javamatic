@@ -232,12 +232,20 @@
 
 ;;;;; templates ;;;;;;
 
-(def x nil)
+(defn let-eval
+  "Eval the code within a let using the passed bindings. Note that
+  this is not a macro, so the symbols of the bindings have to be
+  quoted like so: ['a 5 'b 3]."
+  [bindings & code]
+  (eval `(let ~bindings ~@code)))
+
 (defn eval-placeholder [placeholder record]
-  (let [value (:x record)]
-    (let [code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
-      (binding [x value]
-        (eval code)))))
+  (let [values (into [] (flatten
+                         (map
+                          (fn [x] [(symbol (name (first x))) (second x)]) record)))
+        code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
+    (try (let-eval values code)
+         (catch Exception e placeholder))))
 
 (defn placeholder-var [placeholder]
   {:pre [placeholder? placeholder]}
