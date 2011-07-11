@@ -86,7 +86,24 @@ Often you will need to generate code for a series of fields that are already dec
 
 This produces the same result as above. In a similar vein, the `first-alphas` function allows you to extract the variable names from lines such as `firstName.set(null);`.
 
-Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. In this case the placeholder variable name **has** to be `x`. You can use any expression you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
+Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. The expression can use any of the passed variables if you are using multiple variables, otherwise `x` is used, as in normal placeholders. You can use any expression you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
+
+Here is an example of an evaluated placeholder using multiple variables (not very useful, but hey):
+
+````clojure
+    (print (render-template 
+	    "{{a}} + {{b}} = {{(+ a b)}}\n"
+		{:a [4 5 7 33] :b [4 2 1 10]}))
+````
+
+...and we get:
+
+````java
+    4 + 4 = 8
+    5 + 2 = 7
+    7 + 1 = 8
+    33 + 10 = 43
+````
 
 ### The pastebox
 
