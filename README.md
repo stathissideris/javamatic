@@ -15,7 +15,7 @@ Say you have a class and you need to write a copy constructor for it. It becomes
 
 ````clojure
     (print (copy (render-template
-                  "this.set{{x}}(other.get{{x}());\n"
+                  "this.set{{x}}(other.get{{x}}());\n"
                   (qw FirstName Surname Email
                       DayTelephone MobileTelephone))))
 ````
@@ -32,6 +32,41 @@ The `qw` macro removes the need for quotes, unless your input has spaces, in whi
     this.setDayTelephone(other.getDayTelephone());
     this.setMobileTelephone(other.getMobileTelephone());
 ````
+
+When passing a single list (or vector) to a template, the placeholder should always be `{{x}}`.
+
+### Multiple variables
+
+It is also possible to pass a map instead of a list to `render-template`. This allows you to have more than one variable per template rendering. For example:
+
+````clojure
+    (print (copy (render-template
+                  "this.set{{a}}(other.get{{b}}());\n"
+				  {:a (qw
+					   FirstName
+					   Surname
+					   Email
+                       DayTelephone
+					   MobileTelephone)
+				   :b (qw
+				       Name
+					   FamilyName
+					   ContactEmail
+					   Telephone
+					   Mobile)})))
+````
+
+...produces:
+
+````java
+    this.setFirstName(other.getName());
+    this.setSurname(other.getFamilyName());
+    this.setEmail(other.getContactEmail());
+    this.setDayTelephone(other.getTelephone());
+    this.setMobileTelephone(other.getMobile());
+````
+
+If the passed lists differ in size, the template is rendered as many times as the size of the "first" list (since a map is passed, it's not guaranteed which list is the first).
 
 ### Processing input
 
@@ -51,7 +86,24 @@ Often you will need to generate code for a series of fields that are already dec
 
 This produces the same result as above. In a similar vein, the `first-alphas` function allows you to extract the variable names from lines such as `firstName.set(null);`.
 
-Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. You can use any expression that you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
+Also, as you can see in the example above, if the placeholder starts with parenthesis, it is evaluated as a Clojure expression. The expression can use any of the passed variables if you are using multiple variables, otherwise `x` is used, as in normal placeholders. You can use any expression you like, but javamatic provides a few string manipulation functions. See the *string manipulation* section of the source for a full list.
+
+Here is an example of an evaluated placeholder using multiple variables (not very useful, but hey):
+
+````clojure
+    (print (render-template 
+	    "{{a}} + {{b}} = {{(+ a b)}}\n"
+		{:a [4 5 7 33] :b [4 2 1 10]}))
+````
+
+...and we get:
+
+````java
+    4 + 4 = 8
+    5 + 2 = 7
+    7 + 1 = 8
+    33 + 10 = 43
+````
 
 ### The pastebox
 
@@ -59,6 +111,6 @@ In some cases, the Java code that you'd like to process and pass to extract the 
 	
 ## License
 
-Copyright (C) 2011 FIXME
+Copyright (C) 2011 Efstathios Sideris
 
 Distributed under the Eclipse Public License, the same as Clojure.

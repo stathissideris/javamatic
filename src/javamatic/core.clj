@@ -7,6 +7,17 @@
            [java.awt.datatransfer StringSelection]
            [javax.swing JLabel JOptionPane]))
 
+(def placeholder-re #"\{\{\s*.+?\s*\}\}")
+(def placeholder-capture-re #"\{\{\s*(.+?)\s*\}\}")
+
+(defmacro qw
+  "Constructs a vector of the names (strings) of the passed symbols.
+  This is to save you typing unneccesary quotes. Stolen from Perl.
+
+  Example: (qw \"first name\" surname address)"
+  [& words]
+  `(vector ~@(map name words)))
+
 (defmacro on-action [component event & body]
   `(. ~component addActionListener
       (proxy [java.awt.event.ActionListener] []
@@ -101,6 +112,20 @@
       (.setLocationRelativeTo nil)
       (.setVisible true))))
 
+;;;;; end of pastebox ;;;;;
+
+(defn value-map-to-records [the-map]
+  (let [first-seq (second (first the-map))]
+    (loop [current-map the-map
+           records []
+           s first-seq]
+      (if (seq s)
+        (recur
+         (into {} (map (fn [[k [v & vs]]] [k vs]) current-map)) ;;current-map
+         (conj records
+               (into {} (map (fn [[k [v & vs]]] [k v]) current-map))) ;;records
+         (next s)) ;;s
+        records))))
 
 (defn placeholder?
   "Tests whether the passed string is a template placeholder."
@@ -111,7 +136,7 @@
   "Tests whether the passed string is a template placeholder that
   needs to be evaluated."
   [s]
-  (re-find #"^\{\{" s))
+  (re-find #"^\{\{\(" s))
 
 ;;;;; string manipulation ;;;;;;
 
@@ -187,16 +212,17 @@
   "Split the passed string at new lines and apply get-first-alpha to
   each line."
   [s]
-  (remove nil? (map get-first-alpha (str2/split s #"\n"))))
+  (remove nil? (map first-alpha (str2/split s #"\n"))))
 
 (defn name-from-declaration
   "Extract the variable name from a single Java declaration."
   [s]
-  (first-alpha
-   (second (remove
-            (apply hash-set
-                   "" (qw public protected private static volatile transient final))
-            (str2/split s #"\s+")))))
+  (when (not (empty? (.trim s)))
+    (first-alpha
+      (second (remove
+                (apply hash-set
+                  "" (qw public protected private static volatile transient final))
+                (str2/split s #"\s+"))))))
 
 (defn names-from-declarations
   "Split the passed string at new lines and apply
@@ -206,38 +232,52 @@
 
 ;;;;; templates ;;;;;;
 
-(defmacro qw
-  "Constructs a vector of the names (strings) of the passed symbols.
-  This is to save you typing unneccesary quotes. Stolen from Perl.
+(defn let-eval
+  "Eval the code within a let using the passed bindings. Note that
+  this is not a macro, so the symbols of the bindings have to be
+  quoted like so: ['a 5 'b 3]."
+  [bindings & code]
+  (eval `(let ~bindings ~@code)))
 
-  Example: (qw \"first name\" surname address)"
-  [& words]
-  `(vector ~@(map name words)))
+(defn eval-placeholder [placeholder record]
+  (let [values (into [] (flatten
+                         (map
+                          (fn [x] [(symbol (name (first x))) (second x)]) record)))
+        code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
+    (try (let-eval values code)
+         (catch Exception e placeholder))))
 
-(def x nil)
-(defn eval-placeholder [placeholder value]
-  (let [code (read-string (str2/butlast (str2/drop placeholder 2) 2))]
-    (binding [x value]
-      (eval code))))
+(defn placeholder-var [placeholder]
+  {:pre [placeholder? placeholder]}
+  (second (re-find placeholder-capture-re placeholder)))
 
-(defn render-template-single [t x]
+(defn replace-placeholder [placeholder record]
+  (let [key (keyword (placeholder-var placeholder))]
+    (if (contains? record key)
+      (get record key)
+      placeholder)))
+
+(defn render-template-single [template record]
   (apply str
-         (map #(cond (eval-placeholder? %) (eval-placeholder % x)
-                     (placeholder? %) x
-                     :else %)
-              (str1/re-partition #"\{\{.+?\}\}" t))))
+         (map (fn [token]
+                (cond (eval-placeholder? token) (eval-placeholder token record)
+                      (placeholder? token) (replace-placeholder token record)
+                      :else token))
+                (str1/re-partition placeholder-re template))))
 
 (defn render-template [t values]
-  (apply str
-         (map #(render-template-single t %) values)))
-
+  {:pre [(string? t),
+         (or (map? values) (sequential? values))]}
+  (let [v (if (map? values) values {:x values})]
+    (apply str
+           (map #(render-template-single t %) (value-map-to-records v)))))
 
 ;;example
 ;(copy (render-template
 ;        "set{{x}}(\"{{(upper-case x)}}\");\n"
 ;        (qw FirstName Surname Address Email)))
 
-(print (copy (render-template
-              "this.set{{x}}(other.get{{x}});\n"
-              (qw FirstName Surname Email
-                  DayTelephone MobileTelephone))))
+;(print (copy (render-template
+;              "this.set{{x}}(other.get{{x}});\n"
+;              (qw FirstName Surname Email
+;                  DayTelephone MobileTelephone))))
