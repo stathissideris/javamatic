@@ -180,7 +180,7 @@
   "Get all the characters at the beggining of the string up to the
   first non-alphanumeric character."
   [s]
-  (let [m (re-find #"^\s*[A-Za-z0-9]+" s)]
+  (let [m (re-find #"^\s*[A-Za-z0-9_]+" s)]
     (when m (str2/trim m))))
 
 (defn first-alphas
