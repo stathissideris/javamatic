@@ -230,6 +230,12 @@
   [s]
   (remove nil? (map name-from-declaration (str2/split s #"\n"))))
 
+(defn camel-to-constant
+  "Convert a camel-case name to a name appropriate for java
+  constants."
+  [s]
+  (str2/join "_" (map upper-case (split (add-spaces s)))))
+
 ;;;;; templates ;;;;;;
 
 (defn let-eval
